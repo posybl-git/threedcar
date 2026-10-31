@@ -1,0 +1,341 @@
+@import 'tailwindcss';
+
+:root {
+  --bg: #060607;
+  --fg: #f2f2f0;
+  --muted: #8b8b90;
+  --accent: #d9c39a; /* champagne: the single accent colour */
+  --glass: rgb(20 20 23 / 0.55);
+  --glass-border: rgb(255 255 255 / 0.08);
+}
+
+@theme inline {
+  --font-display: var(--font-manrope), 'Segoe UI', system-ui, sans-serif;
+  --font-sans: var(--font-inter), 'Segoe UI', system-ui, sans-serif;
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  overscroll-behavior-y: none;
+}
+
+/* Horizontal drags rotate the car; vertical swipes scroll the page; pinch zooms the car.
+   (OrbitControls sets touch-action: none inline; this wins over it.) */
+.scene-layer canvas {
+  touch-action: pan-y !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Hero stage: frames the canvas + description. Container queries (not media queries) so the
+   `?record&ratio=4x5` frame lays out exactly like a real portrait screen.
+   Default = portrait (car on top); landscape rules below move the car to the right. */
+
+.stage {
+  --car-split: 56%; /* portrait: share of the height given to the car */
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+  container: stage / size;
+}
+
+/* 1080×1350 recording frame, scaled to fit the window. */
+.stage[data-ratio='4x5'] {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  height: min(100svh, 125vw);
+  aspect-ratio: 4 / 5;
+}
+
+.scene-layer {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: var(--car-split);
+  /* fade the floor out before the description instead of a hard canvas edge */
+  mask-image: linear-gradient(to bottom, #000 82%, transparent);
+}
+
+.hero-copy {
+  position: absolute;
+  z-index: 10;
+  inset: var(--car-split) 0 auto;
+  width: min(52rem, 88cqw);
+  margin-inline: auto;
+  pointer-events: none; /* never block orbiting; CTAs opt back in */
+}
+
+.view-dock {
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  top: calc(var(--car-split) - 3.75rem);
+  display: flex;
+  justify-content: center;
+  padding-inline: 1rem;
+  pointer-events: none;
+}
+
+@container stage (orientation: landscape) and (min-width: 640px) {
+  .scene-layer {
+    inset: 0 0 0 36%;
+    height: auto;
+    mask-image: linear-gradient(to right, transparent, #000 9%);
+  }
+  .hero-copy {
+    inset: 50% auto auto max(2.5rem, 5.5cqw);
+    translate: 0 -50%;
+    width: min(460px, 33cqw);
+    max-width: none;
+    margin: 0;
+  }
+  .view-dock {
+    left: 36%;
+    top: auto;
+    bottom: max(1.5rem, 4cqh);
+  }
+}
+
+/* Short portrait screens (phones): keep the essentials above the fold. */
+@container stage (orientation: portrait) and (max-height: 900px) {
+  /* container queries style descendants only, so the split is overridden on each child */
+  .scene-layer,
+  .hero-copy,
+  .view-dock {
+    --car-split: 48%;
+  }
+  .hero-body {
+    display: none;
+  }
+  .hero-copy > * + * {
+    margin-top: 1rem;
+  }
+  .hero-copy > .hero-stats,
+  .hero-copy > .hero-ctas {
+    margin-top: 1.25rem;
+  }
+  /* (more specific than the base .btn / .hero-ctas rules further down) */
+  .hero-copy .hero-ctas {
+    gap: 0.5rem;
+  }
+  .hero-ctas .btn {
+    height: 2.875rem;
+    padding-inline: 0.9rem;
+    letter-spacing: 0;
+    font-size: 15px;
+  }
+}
+
+/* --- Description typography: solid weights, nothing under 15px, high contrast --- */
+
+.hero-copy > * + * {
+  margin-top: 1.25rem;
+}
+.hero-eyebrow {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.hero-copy > .hero-headline {
+  margin-top: 0.75rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.25rem, 8.5cqw, 4rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-wrap: balance;
+}
+.hero-sub {
+  font-size: clamp(17px, 3.6cqw, 21px);
+  font-weight: 500;
+  line-height: 1.5;
+  color: #e9e9ec;
+  text-wrap: pretty;
+}
+.hero-body {
+  font-size: clamp(15px, 3cqw, 17px);
+  font-weight: 400;
+  line-height: 1.65;
+  color: #b9b9c1;
+  text-wrap: pretty;
+}
+.hero-stats {
+  display: flex;
+  gap: clamp(1.25rem, 5cqw, 2.25rem);
+  padding-top: 1.25rem;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+}
+.hero-copy > .hero-stats {
+  margin-top: 1.75rem;
+}
+.hero-stat {
+  display: flex;
+  flex-direction: column-reverse; /* value above label; dt stays first in the DOM */
+  gap: 0.25rem;
+}
+.hero-stat dd {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.625rem, 6cqw, 2.125rem);
+  line-height: 1.1;
+  color: #fff;
+  white-space: nowrap;
+}
+.hero-stat-unit {
+  font-size: 16px;
+  font-weight: 600;
+  color: #cfcfd5;
+}
+.hero-stat dt {
+  font-size: 15px;
+  font-weight: 500;
+  color: #a2a2aa;
+}
+.hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.hero-copy > .hero-ctas {
+  margin-top: 1.75rem;
+}
+.hero-hint {
+  font-size: 15px;
+  font-weight: 500;
+  color: #8f8f97;
+}
+
+@container stage (orientation: landscape) and (min-width: 640px) {
+  .hero-copy > .hero-headline {
+    font-size: clamp(2.5rem, 3.6cqw, 4.25rem);
+  }
+  .hero-sub {
+    font-size: clamp(17px, 1.15cqw, 21px);
+  }
+  .hero-body {
+    font-size: clamp(15px, 0.9cqw, 17px);
+  }
+  .hero-stat dd {
+    font-size: clamp(1.625rem, 1.8cqw, 2.25rem);
+  }
+  .hero-stats {
+    gap: clamp(1.25rem, 2cqw, 2.5rem);
+  }
+}
+
+.btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 3rem;
+  padding-inline: 1.5rem;
+  border-radius: 9999px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background-color 0.25s, color 0.25s, border-color 0.25s;
+}
+.btn-primary {
+  background: var(--fg);
+  color: var(--bg);
+}
+.btn-primary:hover {
+  background: var(--accent);
+}
+.btn-secondary {
+  border: 1px solid rgb(255 255 255 / 0.22);
+  color: var(--fg);
+}
+.btn-secondary:hover {
+  border-color: var(--fg);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* --- Reveal after the intro sweep (staggered) --- */
+.reveal {
+  opacity: 0;
+  translate: 0 14px;
+  transition:
+    opacity var(--reveal-ms, 600ms) cubic-bezier(0.2, 0.7, 0.2, 1),
+    translate var(--reveal-ms, 600ms) cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: calc(var(--i, 0) * var(--stagger-ms, 90ms));
+}
+.hero-copy[data-show='true'] .reveal {
+  opacity: 1;
+  translate: 0 0;
+}
+.hero-copy:not([data-show='true']) .btn {
+  pointer-events: none; /* invisible buttons must not be clickable */
+}
+
+/* --- ?record: clean capture --- */
+html.recording,
+html.recording * {
+  cursor: none !important;
+}
+html.recording nextjs-portal {
+  display: none !important;
+}
+
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.view-btn {
+  height: 2.25rem;
+  padding-inline: 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  transition: color 0.25s, background-color 0.25s;
+}
+@media (min-width: 640px) {
+  .view-btn {
+    padding-inline: 0.95rem;
+  }
+}
+.view-btn:hover:not(:disabled) {
+  color: var(--fg);
+}
+.view-btn[aria-pressed='true'],
+.view-btn[aria-pressed='true']:hover {
+  color: var(--bg);
+  background: var(--fg);
+}
+.view-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.view-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important; /* the description just appears, no stagger */
+    animation-duration: 0.01ms !important;
+  }
+}
